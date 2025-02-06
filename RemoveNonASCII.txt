@@ -9,7 +9,7 @@ let
     CleanedTable = Table.TransformColumns(
         mySource, 
         List.Transform(
-            Table.ColumnNames(Source), 
+            Table.ColumnNames(mySource), 
             each {_, each if Value.Is(_, type text) then RemoveNonASCII(_) else _, type text}))
 in
     CleanedTable
