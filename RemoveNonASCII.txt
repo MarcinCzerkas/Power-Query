@@ -1,0 +1,15 @@
+let
+    mySource = YourTableName,  // Replace with your actual table name
+
+    // Remove non-ASCII characters
+    RemoveNonASCII = (text as text) as text =>
+        Text.Select(text, List.Transform({32..126}, each Character.FromNumber(_))),
+
+    // Apply the function to all text columns in the table; if the data type is other than text, the function is not applied
+    CleanedTable = Table.TransformColumns(
+        mySource, 
+        List.Transform(
+            Table.ColumnNames(Source), 
+            each {_, each if Value.Is(_, type text) then RemoveNonASCII(_) else _, type text}))
+in
+    CleanedTable
