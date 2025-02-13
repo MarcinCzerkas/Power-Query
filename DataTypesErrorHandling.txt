@@ -2,22 +2,11 @@
     TypePrep = Table.TransformColumns(
         RemovedBlankRows,
         {
-            {"Cena", each try Number.From(_) otherwise null},
-            {"Pokoje", each try Number.From(_) otherwise null},
-            {"Metraż", each try Number.From(_) otherwise null},
-            {"Piętro", each try Number.From(_) otherwise null},
-            {"Czynsz", each try Number.From(_) otherwise null}}),
+            {"Column1", each try Number.From(_) otherwise null},
+            {"Column2", each try Number.From(_) otherwise null}),
     ChangedType = Table.TransformColumnTypes(
         TypePrep,
         {
-            {"Cena", type number},
-            {"Opis", type text},
-            {"Adres", type text},
-            {"Pokoje", Int64.Type},
-            {"Metraż", type number},
-            {"Piętro", Int64.Type},
-            {"Czynsz", type number},
-            {"Wynajmujący", type text},
-            {"Biuro nieruchomości", type logical},
-            {"Data pobrania", type date},
-            {"Lokalizacja-link", type text}}),
+            {"Column1", type number},
+            {"Column2", Int64.Type},
+            {"Column3", type text}}),
