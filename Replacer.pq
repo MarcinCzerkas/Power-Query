@@ -1,11 +1,7 @@
     // Define the list of replacement rules
     Replacements = {
-        { " m²", "", {"Metraż"} },
-        { " piętro", "", {"Piętro"} },
-        { "parter", "1", {"Piętro"} },
-        { "Biuro nieruchomości", "true", {"Biuro nieruchomości"} },
-        { ".", ",", {"Metraż"} },
-        { "zł/miesiąc", "", {"Cena"} }
+        { "old value", "", {"New Value"} },
+        { " oLDvALUE", "", {"New Value"} }
     },
 
     // Apply replacements iteratively using List.Accumulate
@@ -18,4 +14,5 @@
                 replacement{0}, 
                 replacement{1}, 
                 Replacer.ReplaceText, 
+
                 replacement{2}))
