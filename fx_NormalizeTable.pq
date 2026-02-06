@@ -1,5 +1,5 @@
 // Function for normalization of flat tables (creates a dimension table based on selected columns).
-(table_to_normalize as table, columns_to_normalize as list, optional index_name as text) as table =>
+(table_to_normalize as table, columns_to_normalize as list, index_name as text) as table =>
 let
     Source = Table.SelectColumns(table_to_normalize, columns_to_normalize),
     Distinct = Table.Distinct(Source),
