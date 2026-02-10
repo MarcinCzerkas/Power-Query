@@ -83,14 +83,19 @@ let
 
     // Store the list of selected columns, exluding the column "Date" (which will be included anyway)
     SelectedColumns = Table.SelectRows(Table.FromList(FilterHERE[Name]), each ([Column1] <> "Date"))[Column1],
-
     Today = Date.From(DateTime.LocalNow()),
 
     // Set the start date of the calendar
-    StartDate = #date(2020, 1, 1),
+    StartDate = #date(2015, 1, 1),
 
-    // The end date set as the last day of the current year
-    EndDate = Date.EndOfYear(Today),
+    // The end date
+    EndDate = #date(2017, 12, 31),
+
+    // Artificial date used to fill nulls in fact table's foreign key in case of missing date values
+    SentinelDate = #date(9999, 12, 31),
+
+    // Specify whether to include a sentinel date or not ("YES" or "NO")
+    IncludeSentinelDate = "YES",
 
     // Generate all dates from StartDate to EndDate
     ListOfDates =
@@ -98,13 +103,11 @@ let
           () => StartDate,
           each _ <= EndDate,
           each Date.AddDays(_,1)),
-
+    ListWithSentinel = List.Combine({ListOfDates, {SentinelDate}}),
     // Transform to a table
-    TableOfDates = Table.RenameColumns(Table.FromList(ListOfDates, Splitter.SplitByNothing(), null, null, ExtraValues.Error), {"Column1", "Date"}),
-
+    TableOfDates = Table.RenameColumns(Table.FromList(ListWithSentinel, Splitter.SplitByNothing(), null, null, ExtraValues.Error), {"Column1", "Date"}),
     // Invoke the calendar function for each row (= for each date)
     InvokedCalendarFunction = Table.AddColumn(TableOfDates, "myCalendarFunction", each myCalendarFunction([Date], SelectedColumns, "en-US", null)),
-
     // Expand only the selected columns based on the list from the filtering actions in the step "FilterHERE" and the list stored in the step "SelectedColumns"
     ExpandedSelectedColumns = Table.ExpandRecordColumn(InvokedCalendarFunction, "myCalendarFunction", SelectedColumns),
 
@@ -163,6 +166,25 @@ let
     ListRecordTypesSelected = Table.ToColumns(Table.Transpose(TableRecordTypesSelected)),
 
     // Apply the data types to all columns
-    Calendar = Table.TransformColumnTypes(ExpandedSelectedColumns, ListRecordTypesSelected)
+    Calendar = Table.TransformColumnTypes(ExpandedSelectedColumns, ListRecordTypesSelected),
+    ChangeType = Table.TransformColumnTypes(Calendar, {{"Date", type date}}),
+
+    // Add one column to mark sentinel date
+    AddSentinelFlag = Table.AddColumn(
+        ChangeType,
+        "SentinelFlag",
+        each if [Date] = SentinelDate then "Sentinel Date" else "Normal Date",
+        type text
+    ),
+
+    // If the user selected not to include a sentinel date, delete it
+    ConditionalSentinelCheck =
+        if IncludeSentinelDate = "YES" then
+            AddSentinelFlag
+        else
+            Table.RemoveColumns(
+                Table.SelectRows(AddSentinelFlag, each [SentinelFlag] <> "Sentinel Date"),
+                "SentinelFlag"
+            )
 in
-    Calendar
+    ConditionalSentinelCheck
