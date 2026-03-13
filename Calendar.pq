@@ -1,189 +1,561 @@
 let
-    myCalendarFunction = ( myDate as date, optional myColumns as nullable list, optional cultureCode as nullable text, optional FiscalYearEndMonth as number ) as record =>
-
+    myCalendarFunction = (
+        myDate as date, 
+        optional myColumns as nullable list, 
+        optional cultureCode as nullable text, 
+        optional FiscalYearEndMonth as number
+    ) as record =>
         let
             // Use the culture code "en-US" by default
-            cultureCode = cultureCode ?? "en-US",
-
+            cultureCode = cultureCode ?? "en-US", 
+            CurrentDate = Date.From(DateTime.LocalNow()), 
+            CurrentYear = Date.Year(CurrentDate), 
+            CurrentMonth = Date.Month(CurrentDate), 
+            CurrentQuarter = Date.QuarterOfYear(CurrentDate), 
+            CurrentWeekStart = Date.StartOfWeek(CurrentDate, Day.Monday), 
             /* The following record contains the logic that computes each column.
             Each field receives metadata which can be used to filter the columns.
             The fiscal year is still a criteria to be added to the code. */
-
-            myRecord =
-    [
-        Date                = myDate                                                    meta [Data Type = "Date",            Description = "The original date value",                        Category = "Date",       Examples = "2025-01-01"],
-        DateAsInteger       = Number.From(Date.ToText(myDate, "yyyyMMdd"))              meta [Data Type = "Integer",         Description = "The date as an integer in yyyyMMdd format",      Category = "Date",       Examples = "20250502"],
-        DateDayFormat       = Date.ToText(myDate, "ddd, %d MMM yy", cultureCode)        meta [Data Type = "Text",            Description = "The date in format of dd %d MMM yy",             Category = "Date",       Examples = "Sat, 1 Jul 24"],
-        Year                = Date.Year(myDate)                                         meta [Data Type = "Integer",         Description = "The year",                                       Category = "Year",       Examples = "2025"],
-        YearDefault         = (if Date.IsInCurrentYear(myDate) then "Current" else
-                              if Date.IsInPreviousYear(myDate) then "Previous" else
-                              if Date.IsInNextYear(myDate) then "Next" else
-                              Text.From(Year))                                          meta [Data Type = "Text",            Description = "Current/Previous/Next year flag",                Category = "Year",       Examples = "Current, 2018, Previous, Next"],
-        DayOfYearNumber     = Date.DayOfYear(myDate)                                    meta [Data Type = "Integer",         Description = "The day of the year as a number",                Category = "Day",        Examples = "45"],
-        DayOfMonthNumber    = Date.Day(myDate)                                          meta [Data Type = "Integer",         Description = "The day of the month as a number",               Category = "Day",        Examples = "31"],
-        DayName             = Date.DayOfWeekName(myDate, cultureCode)                   meta [Data Type = "Text",            Description = "The full name of the day",                       Category = "Day",        Examples = "Monday"],
-        DayNameShort3       = Date.ToText(myDate, "ddd", cultureCode)                   meta [Data Type = "Text",            Description = "The abbreviated (3-digit) name of the day",      Category = "Day",        Examples = "Mon"],
-        DayNameShort2       = Date.ToText(myDate, "dd", cultureCode)                    meta [Data Type = "Text",            Description = "The abbreviated (2-digit) name of the day",      Category = "Day",        Examples = "Mo"],
-        DayOfWeekNumber     = Date.DayOfWeek(myDate, Day.Monday)                        meta [Data Type = "Integer",         Description = "The day of the week as a number (Monday=0)",     Category = "Day",        Examples = "0"],
-        IsWeekend           = (Date.DayOfWeek(myDate, Day.Monday) >= 5)                 meta [Data Type = "Boolean",         Description = "Returns 'true' if the day is a weekend",         Category = "Day",        Examples = "TRUE"],
-        IsWeekday           = (Date.DayOfWeek(myDate, Day.Monday) < 5)                  meta [Data Type = "Boolean",         Description = "Returns 'true' if the day is a weekday",         Category = "Day",        Examples = "FALSE"],
-        MonthNumber         = Date.Month(myDate)                                        meta [Data Type = "Integer",         Description = "The month of the year as a number",              Category = "Month",      Examples = "3"],
-        MonthName           = Date.MonthName(myDate, cultureCode)                       meta [Data Type = "Text",            Description = "The full name of the month",                     Category = "Month",      Examples = "January"],
-        MonthNameShort      = Date.ToText(myDate, "MMM", cultureCode)                   meta [Data Type = "Text",            Description = "The abbreviated name of the month",              Category = "Month",      Examples = "Jan"],
-        DaysInMonth         = Date.DaysInMonth(myDate)                                  meta [Data Type = "Integer",         Description = "The number of days in the month",                Category = "Month",      Examples = "30, 31, 28"],
-        MonthYearShort      = Date.ToText(myDate, "MMM yyyy", cultureCode)              meta [Data Type = "Text",            Description = "Month and year in MMM-yyyy format",              Category = "Month",      Examples = "Jan 2025"],
-        YearMonthNumber     = Date.ToText(myDate, "yyyyMM")                             meta [Data Type = "Text",            Description = "Year and month in yyyyMM format",                Category = "Month",      Examples = "202501"],
-        YearMonthShort      = Date.ToText(myDate, "yyyy MMM", cultureCode)              meta [Data Type = "Text",            Description = "Year and month in yyyy-MMM format",              Category = "Month",      Examples = "2025 Jan"],
-        EndOfMonth          = Date.EndOfMonth(myDate)                                   meta [Data Type = "Date",            Description = "The last day of the month",                      Category = "Month",      Examples = "2025-01-01"],
-        StartOfMonth        = Date.StartOfMonth(myDate)                                 meta [Data Type = "Date",            Description = "The first day of the month",                     Category = "Month",      Examples = "2025-01-31"],
-        EndOfWeek           = Date.EndOfWeek(myDate)                                    meta [Data Type = "Date",            Description = "The last day of the week",                       Category = "Week",       Examples = "2025-01-06"],
-        StartOfWeek         = Date.StartOfWeek(myDate)                                  meta [Data Type = "Date",            Description = "The first day of the week",                      Category = "Week",       Examples = "2025-01-12"],
-        EndOfQuarter        = Date.EndOfQuarter(myDate)                                 meta [Data Type = "Date",            Description = "The last day of the quarter",                    Category = "Quarter",    Examples = "2025-01-01"],
-        StartOfQuarter      = Date.StartOfQuarter(myDate)                               meta [Data Type = "Date",            Description = "The first day of the quarter",                   Category = "Quarter",    Examples = "2025-03-31"],
-        EndOfYear           = Date.EndOfYear(myDate)                                    meta [Data Type = "Date",            Description = "The last day of the year",                       Category = "Year",       Examples = "2025-01-01"],
-        StartOfYear         = Date.StartOfYear(myDate)                                  meta [Data Type = "Date",            Description = "The first day of the year",                      Category = "Year",       Examples = "2025-12-31"],
-        WeekOfYearNumber    = Date.WeekOfYear(myDate, Day.Monday)                       meta [Data Type = "Integer",         Description = "The week of the year as a number",               Category = "Week",       Examples = "45"],
-        WeekOfMonthNumber   = Date.WeekOfMonth(myDate, Day.Monday)                      meta [Data Type = "Integer",         Description = "The week of the month as a number",              Category = "Week",       Examples = "3"],
-        QuarterNumber       = Date.QuarterOfYear(myDate)                                meta [Data Type = "Integer",         Description = "The quarter of the year as a number",            Category = "Quarter",    Examples = "1"],
-        QuarterNameShort    = ("Q" & Text.From(Date.QuarterOfYear(myDate)))             meta [Data Type = "Text",            Description = "The abbreviated name of the quarter",            Category = "Quarter",    Examples = "Q1"],
-        QuarterName         = ("Quarter " & Text.From(Date.QuarterOfYear(myDate)))      meta [Data Type = "Text",            Description = "The name of the quarter",                        Category = "Quarter",    Examples = "Quarter 1"],
-        YearQuarterName     = (Text.From(Year) & QuarterNameShort)                      meta [Data Type = "Text",            Description = "The year and quarter as a name",                 Category = "Quarter",    Examples = "2025Q1"],
-        MonthDefault        = (if Date.IsInCurrentMonth(myDate) then "Current" else
-                              if Date.IsInPreviousMonth(myDate) then "Previous" else
-                              if Date.IsInNextMonth(myDate) then "Next" else
-                              Text.From(YearMonthNumber))                               meta [Data Type = "Text",            Description = "Current/Previous/Next month flag",               Category = "Month",      Examples = "Current, 2025-05, Previous, Next"],
-        QuarterDefault      = (if Date.IsInCurrentQuarter(myDate) then "Current" else
-                              if Date.IsInPreviousQuarter(myDate) then "Previous" else
-                              if Date.IsInNextQuarter(myDate) then "Next" else
-                              Text.From(YearQuarterName))                               meta [Data Type = "Text",            Description = "Current/Previous/Next quarter flag",             Category = "Quarter",    Examples = "Current, 2024Q2, Previous, Next"],
-        DayDefault          = (if Date.IsInCurrentDay(myDate) then "Current" else
-                              if Date.IsInPreviousDay(myDate) then "Previous" else
-                              if Date.IsInNextDay(myDate) then "Next" else
-                              Text.From(myDate))                                        meta [Data Type = "Text",            Description = "Current/Previous/Next day flag",                 Category = "Day",        Examples = "Current, 2018-12-06, Previous, Next"],
-        WeekDefault         = (if Date.IsInCurrentWeek(myDate) then "Current" else
-                              if Date.IsInPreviousWeek(myDate) then "Previous" else
-                              if Date.IsInNextWeek(myDate) then "Next" else
-                              Text.From(WeekOfYearNumber))                              meta [Data Type = "Text",            Description = "Current/Previous/Next week flag",                Category = "Week",       Examples = "Current, 6, Previous, Next"]
-    ]
+            myRecord = [
+                Date = myDate
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The original date value", 
+                        Category    = "Date", 
+                        Examples    = "2025-01-01"
+                    ], 
+                DateAsInteger = Number.From(Date.ToText(myDate, "yyyyMMdd"))
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The date as an integer in yyyyMMdd format", 
+                        Category    = "Date", 
+                        Examples    = "20250502"
+                    ], 
+                DateDayFormat = Date.ToText(myDate, "ddd, %d MMM yy", cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The date in format of dd %d MMM yy", 
+                        Category    = "Date", 
+                        Examples    = "Sat, 1 Jul 24"
+                    ], 
+                Year = Date.Year(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The year", 
+                        Category    = "Year", 
+                        Examples    = "2025"
+                    ], 
+                DayOfYearNumber = Date.DayOfYear(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The day of the year as a number", 
+                        Category    = "Day", 
+                        Examples    = "45"
+                    ], 
+                DayOfMonthNumber = Date.Day(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The day of the month as a number", 
+                        Category    = "Day", 
+                        Examples    = "31"
+                    ], 
+                DayName = Date.DayOfWeekName(myDate, cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The full name of the day", 
+                        Category    = "Day", 
+                        Examples    = "Monday"
+                    ], 
+                DayOffset = Duration.Days(myDate - CurrentDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Offset in days relative to today", 
+                        Category    = "Day", 
+                        Examples    = "0, -1, 1"
+                    ], 
+                DayNameShort = Date.ToText(myDate, "ddd", cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The abbreviated (3-digit) name of the day", 
+                        Category    = "Day", 
+                        Examples    = "Mon"
+                    ], 
+                DayOfWeekNumber = Date.DayOfWeek(myDate, Day.Monday)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The day of the week as a number (Monday=0)", 
+                        Category    = "Day", 
+                        Examples    = "0"
+                    ], 
+                IsWeekend = (Date.DayOfWeek(myDate, Day.Monday) >= 5)
+                    meta [
+                        Data Type   = "Boolean", 
+                        Description = "Returns 'true' if the day is a weekend", 
+                        Category    = "Day", 
+                        Examples    = "TRUE"
+                    ], 
+                IsWeekday = (Date.DayOfWeek(myDate, Day.Monday) < 5)
+                    meta [
+                        Data Type   = "Boolean", 
+                        Description = "Returns 'true' if the day is a weekday", 
+                        Category    = "Day", 
+                        Examples    = "FALSE"
+                    ], 
+                DayType = (if Date.DayOfWeek(myDate, Day.Monday) >= 5 then "Weekend" else "Weekday")
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "Returns 'Weekend' for Saturday/Sunday, otherwise 'Weekday'", 
+                        Category    = "Day", 
+                        Examples    = "Weekday"
+                    ], 
+                MonthNumber = Date.Month(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The month of the year as a number", 
+                        Category    = "Month", 
+                        Examples    = "3"
+                    ], 
+                MonthOffset = (
+                    (Date.Year(myDate) - CurrentYear) * 12 + (Date.Month(myDate) - CurrentMonth)
+                )
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Offset in months relative to the current month (0=current)", 
+                        Category    = "Month", 
+                        Examples    = "0, -5, 1"
+                    ], 
+                MonthName = Date.MonthName(myDate, cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The full name of the month", 
+                        Category    = "Month", 
+                        Examples    = "January"
+                    ], 
+                MonthNameShort = Date.ToText(myDate, "MMM", cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The abbreviated name of the month", 
+                        Category    = "Month", 
+                        Examples    = "Jan"
+                    ], 
+                MonthNameInitial = Text.Start(Date.ToText(myDate, "MMM", cultureCode), 1)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The initial letter of the month", 
+                        Category    = "Month", 
+                        Examples    = "J"
+                    ], 
+                DaysInMonth = Date.DaysInMonth(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The number of days in the month", 
+                        Category    = "Month", 
+                        Examples    = "30, 31, 28"
+                    ], 
+                MonthYearShort = Date.ToText(myDate, "MMM yyyy", cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "Month and year in MMM-yyyy format", 
+                        Category    = "Month", 
+                        Examples    = "Jan 2025"
+                    ], 
+                YearMonthNumber = Date.ToText(myDate, "yyyyMM")
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "Year and month in yyyyMM format", 
+                        Category    = "Month", 
+                        Examples    = "202501"
+                    ], 
+                YearMonthShort = Date.ToText(myDate, "yyyy MMM", cultureCode)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "Year and month in yyyy-MMM format", 
+                        Category    = "Month", 
+                        Examples    = "2025 Jan"
+                    ], 
+                EndOfMonth = Date.EndOfMonth(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The last day of the month", 
+                        Category    = "Month", 
+                        Examples    = "2025-01-01"
+                    ], 
+                StartOfMonth = Date.StartOfMonth(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The first day of the month", 
+                        Category    = "Month", 
+                        Examples    = "2025-01-31"
+                    ], 
+                EndOfWeek = Date.EndOfWeek(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The last day of the week", 
+                        Category    = "Week", 
+                        Examples    = "2025-01-06"
+                    ], 
+                StartOfWeek = Date.StartOfWeek(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The first day of the week", 
+                        Category    = "Week", 
+                        Examples    = "2025-01-12"
+                    ], 
+                WeekOffset = Number.IntegerDivide(
+                    Duration.Days(Date.StartOfWeek(myDate, Day.Monday) - CurrentWeekStart), 
+                    7
+                )
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Offset in weeks relative to the current week", 
+                        Category    = "Week", 
+                        Examples    = "0, -1, 1"
+                    ], 
+                EndOfQuarter = Date.EndOfQuarter(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The last day of the quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "2025-01-01"
+                    ], 
+                StartOfQuarter = Date.StartOfQuarter(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The first day of the quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "2025-03-31"
+                    ], 
+                QuarterOffset = (
+                    (Date.Year(myDate) - CurrentYear)
+                        * 4
+                        + (Date.QuarterOfYear(myDate) - CurrentQuarter)
+                )
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Offset in quarters relative to current quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "0, -1, 1"
+                    ], 
+                EndOfYear = Date.EndOfYear(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The last day of the year", 
+                        Category    = "Year", 
+                        Examples    = "2025-01-01"
+                    ], 
+                StartOfYear = Date.StartOfYear(myDate)
+                    meta [
+                        Data Type   = "Date", 
+                        Description = "The first day of the year", 
+                        Category    = "Year", 
+                        Examples    = "2025-12-31"
+                    ], 
+                YearOffset = Date.Year(myDate)
+                    - CurrentYear
+                        meta [
+                            Data Type   = "Integer", 
+                            Description = "Offset in years relative to current year", 
+                            Category    = "Year", 
+                            Examples    = "0, -1, 1"
+                        ], 
+                WeekOfYearNumber = Date.WeekOfYear(myDate, Day.Monday)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The week of the year as a number", 
+                        Category    = "Week", 
+                        Examples    = "45"
+                    ], 
+                WeekOfMonthNumber = Date.WeekOfMonth(myDate, Day.Monday)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The week of the month as a number", 
+                        Category    = "Week", 
+                        Examples    = "3"
+                    ], 
+                QuarterNumber = Date.QuarterOfYear(myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "The quarter of the year as a number", 
+                        Category    = "Quarter", 
+                        Examples    = "1"
+                    ], 
+                QuarterNameShort = ("Q" & Text.From(Date.QuarterOfYear(myDate)))
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The abbreviated name of the quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "Q1"
+                    ], 
+                QuarterName = ("Quarter " & Text.From(Date.QuarterOfYear(myDate)))
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The name of the quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "Quarter 1"
+                    ], 
+                YearQuarterName = (Text.From(Year) & QuarterNameShort)
+                    meta [
+                        Data Type   = "Text", 
+                        Description = "The year and quarter as a name", 
+                        Category    = "Quarter", 
+                        Examples    = "2025Q1"
+                    ], 
+                IsFutureDate = myDate
+                    > CurrentDate
+                        meta [
+                            Data Type   = "Boolean", 
+                            Description = "TRUE if the date is in the future", 
+                            Category    = "Utility", 
+                            Examples    = "TRUE, FALSE"
+                        ], 
+                IsPastDate = myDate
+                    < CurrentDate
+                        meta [
+                            Data Type   = "Boolean", 
+                            Description = "TRUE if the date is before today", 
+                            Category    = "Utility", 
+                            Examples    = "TRUE, FALSE"
+                        ], 
+                RelativeDate = 
+                    if myDate > CurrentDate then
+                        "Future"
+                    else if myDate < CurrentDate then
+                        "Past"
+                    else
+                        "Today"
+                            meta [
+                                Data Type = "Text", 
+                                Description
+                                    = "Descriptive indicator of past, present and future dates", 
+                                Category = "Utility", 
+                                Examples = "Future, Past, Today"
+                            ], 
+                RelativeDayBucket = 
+                    if myDate = CurrentDate then
+                        "Today"
+                    else if myDate = Date.AddDays(CurrentDate, - 1) then
+                        "Yesterday"
+                    else if myDate >= Date.AddDays(CurrentDate, - 6) and myDate < CurrentDate then
+                        "Last 7 Days"
+                    else if myDate >= Date.AddDays(CurrentDate, - 29) and myDate < CurrentDate then
+                        "Last 30 Days"
+                    else if myDate > CurrentDate then
+                        "Future"
+                    else
+                        "Older"
+                            meta [
+                                Data Type   = "Text", 
+                                Description = "Relative bucket of the date compared to today", 
+                                Category    = "Utility", 
+                                Examples    = "Today, Yesterday, Last 7 Days"
+                            ], 
+                RelativeMonthBucket = 
+                    if MonthOffset = 0 then
+                        "Current Month"
+                    else if MonthOffset = - 1 then
+                        "Previous Month"
+                    else if MonthOffset = 1 then
+                        "Next Month"
+                    else if MonthOffset >= - 11 and MonthOffset <= - 2 then
+                        "Last 12 Months"
+                    else if MonthOffset > 1 then
+                        "Future Months"
+                    else
+                        "Older"
+                            meta [
+                                Data Type = "Text", 
+                                Description
+                                    = "Relative bucket of the month compared to current month", 
+                                Category = "Utility", 
+                                Examples = "Current Month, Previous Month, Last 12 Months"
+                            ], 
+                RelativeQuarterBucket = 
+                    if QuarterOffset = 0 then
+                        "Current Quarter"
+                    else if QuarterOffset = - 1 then
+                        "Previous Quarter"
+                    else if QuarterOffset = 1 then
+                        "Next Quarter"
+                    else if QuarterOffset >= - 3 and QuarterOffset <= - 2 then
+                        "Last 4 Quarters"
+                    else if QuarterOffset > 1 then
+                        "Future Quarters"
+                    else
+                        "Older"
+                            meta [
+                                Data Type = "Text", 
+                                Description
+                                    = "Relative bucket of the quarter compared to current quarter", 
+                                Category = "Utility", 
+                                Examples = "Current Quarter, Previous Quarter, Last 4 Quarters"
+                            ], 
+                RelativeYearBucket = 
+                    if YearOffset = 0 then
+                        "Current Year"
+                    else if YearOffset = - 1 then
+                        "Previous Year"
+                    else if YearOffset = 1 then
+                        "Next Year"
+                    else if YearOffset >= - 5 and YearOffset <= - 2 then
+                        "Last 5 Years"
+                    else if YearOffset > 1 then
+                        "Future Years"
+                    else
+                        "Older"
+                            meta [
+                                Data Type   = "Text", 
+                                Description = "Relative bucket of the year compared to current year", 
+                                Category    = "Utility", 
+                                Examples    = "Current Year, Previous Year, Last 5 Years"
+                            ], 
+                DaysToEndOfMonth = Duration.Days(Date.EndOfMonth(myDate) - myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Number of days remaining until the end of the month", 
+                        Category    = "Month", 
+                        Examples    = "0, 5, 20"
+                    ], 
+                DaysToEndOfQuarter = Duration.Days(Date.EndOfQuarter(myDate) - myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Number of days remaining until the end of the quarter", 
+                        Category    = "Quarter", 
+                        Examples    = "0, 12, 70"
+                    ], 
+                DaysToEndOfYear = Duration.Days(Date.EndOfYear(myDate) - myDate)
+                    meta [
+                        Data Type   = "Integer", 
+                        Description = "Number of days remaining until the end of the year", 
+                        Category    = "Year", 
+                        Examples    = "0, 15, 120"
+                    ]
+            ]
         in
-            myRecord,
-
+            myRecord, 
     /* Invoke the function to create a sample record of data based on one date.
     This record will be used to choose the columns. */
-
-    CreateRecord = myCalendarFunction(#date(2024,12,31)),
-    ConvertToTable = Record.ToTable(CreateRecord),
-
+    CreateRecord = myCalendarFunction(#date(2024, 12, 31)), 
+    ConvertToTable = Record.ToTable(CreateRecord), 
     // Display the metadata
-    AddMetaData = Table.AddColumn(ConvertToTable, "Metadata", each Value.Metadata([Value])),
-    ExpandMetaData = Table.ExpandRecordColumn(AddMetaData, "Metadata", Record.FieldNames(AddMetaData[Metadata]{0})),
-
+    AddMetaData = Table.AddColumn(ConvertToTable, "Metadata", each Value.Metadata([Value])), 
+    ExpandMetaData = Table.ExpandRecordColumn(
+        AddMetaData, 
+        "Metadata", 
+        Record.FieldNames(AddMetaData[Metadata]{0})
+    ), 
     // This step can be used to choose the columns based on the metadata 
-    FilterHERE = Table.SelectRows(ExpandMetaData, each ([Name] <> null)),
-
+    FilterHERE = Table.SelectRows(ExpandMetaData, each ([Name] <> null)), 
     // Store the list of selected columns, exluding the column "Date" (which will be included anyway)
-    SelectedColumns = Table.SelectRows(Table.FromList(FilterHERE[Name]), each ([Column1] <> "Date"))[Column1],
-    Today = Date.From(DateTime.LocalNow()),
-
+    SelectedColumns = Table.SelectRows(Table.FromList(FilterHERE[Name]), each ([Column1] <> "Date"))[
+        Column1
+    ], 
+    Today = Date.From(DateTime.LocalNow()), 
     // Set the start date of the calendar
-    StartDate = #date(2015, 1, 1),
-
+    StartDate = #date(2015, 1, 1), 
     // The end date
-    EndDate = #date(2017, 12, 31),
-
+    EndDate = #date(2017, 12, 31), 
     // Artificial date used to fill nulls in fact table's foreign key in case of missing date values
-    SentinelDate = #date(9999, 12, 31),
-
+    SentinelDate = #date(9999, 12, 31), 
     // Specify whether to include a sentinel date or not ("YES" or "NO")
-    IncludeSentinelDate = "YES",
-
+    IncludeSentinelDate = "YES", 
     // Generate all dates from StartDate to EndDate
-    ListOfDates =
-        List.Generate(
-          () => StartDate,
-          each _ <= EndDate,
-          each Date.AddDays(_,1)),
-    ListWithSentinel = List.Combine({ListOfDates, {SentinelDate}}),
+    ListOfDates = List.Generate(() => StartDate, each _ <= EndDate, each Date.AddDays(_, 1)), 
+    ListWithSentinel = List.Combine({ListOfDates, {SentinelDate}}), 
     // Transform to a table
-    TableOfDates = Table.RenameColumns(Table.FromList(ListWithSentinel, Splitter.SplitByNothing(), null, null, ExtraValues.Error), {"Column1", "Date"}),
+    TableOfDates = Table.RenameColumns(
+        Table.FromList(ListWithSentinel, Splitter.SplitByNothing(), null, null, ExtraValues.Error), 
+        {"Column1", "Date"}
+    ), 
     // Invoke the calendar function for each row (= for each date)
-    InvokedCalendarFunction = Table.AddColumn(TableOfDates, "myCalendarFunction", each myCalendarFunction([Date], SelectedColumns, "en-US", null)),
+    InvokedCalendarFunction = Table.AddColumn(
+        TableOfDates, 
+        "myCalendarFunction", 
+        each myCalendarFunction([Date], SelectedColumns, "en-US", null)
+    ), 
     // Expand only the selected columns based on the list from the filtering actions in the step "FilterHERE" and the list stored in the step "SelectedColumns"
-    ExpandedSelectedColumns = Table.ExpandRecordColumn(InvokedCalendarFunction, "myCalendarFunction", SelectedColumns),
-
+    ExpandedSelectedColumns = Table.ExpandRecordColumn(
+        InvokedCalendarFunction, 
+        "myCalendarFunction", 
+        SelectedColumns
+    ), 
     // Define the data types of each column
-    myRecordTypes =
-    [
-        Date                = [ Type = Date.Type],
-        DateAsInteger       = [ Type = Int64.Type],
-        DateDayFormat       = [ Type = Text.Type],
-        Year                = [ Type = Int64.Type],
-        YearDefault         = [ Type = Text.Type],
-        DayOfYearNumber     = [ Type = Int64.Type],
-        DayOfMonthNumber    = [ Type = Int64.Type],
-        DayName             = [ Type = Text.Type],
-        DayNameShort3       = [ Type = Text.Type],
-        DayNameShort2       = [ Type = Text.Type],
-        DayOfWeekNumber     = [ Type = Int64.Type],
-        IsWeekend           = [ Type = Logical.Type],
-        IsWeekday           = [ Type = Logical.Type],
-        MonthNumber         = [ Type = Int64.Type],
-        MonthName           = [ Type = Text.Type],
-        MonthNameShort      = [ Type = Text.Type],
-        DaysInMonth         = [ Type = Int64.Type],
-        MonthYearShort      = [ Type = Text.Type],
-        YearMonthNumber     = [ Type = Text.Type],
-        YearMonthShort      = [ Type = Text.Type],
-        EndOfMonth          = [ Type = Date.Type],
-        StartOfMonth        = [ Type = Date.Type],
-        EndOfWeek           = [ Type = Date.Type],
-        StartOfWeek         = [ Type = Date.Type],
-        EndOfQuarter        = [ Type = Date.Type],
-        StartOfQuarter      = [ Type = Date.Type],
-        EndOfYear           = [ Type = Date.Type],
-        StartOfYear         = [ Type = Date.Type],
-        WeekOfYearNumber    = [ Type = Int64.Type],
-        WeekOfMonthNumber   = [ Type = Int64.Type],
-        QuarterNumber       = [ Type = Int64.Type],
-        QuarterNameShort    = [ Type = Text.Type],
-        QuarterName         = [ Type = Text.Type],
-        YearQuarterName     = [ Type = Text.Type],
-        MonthDefault        = [ Type = Text.Type],
-        QuarterDefault      = [ Type = Text.Type],
-        DayDefault          = [ Type = Text.Type],
-        WeekDefault         = [ Type = Text.Type]
-    ],
-
+    myRecordTypes = [
+        Date                  = [Type = Date.Type], 
+        DateAsInteger         = [Type = Int64.Type], 
+        DateDayFormat         = [Type = Text.Type], 
+        Year                  = [Type = Int64.Type], 
+        DayOfYearNumber       = [Type = Int64.Type], 
+        DayOfMonthNumber      = [Type = Int64.Type], 
+        DayName               = [Type = Text.Type], 
+        DayNameShort          = [Type = Text.Type], 
+        DayOfWeekNumber       = [Type = Int64.Type], 
+        IsWeekend             = [Type = Logical.Type], 
+        IsWeekday             = [Type = Logical.Type], 
+        DayType               = [Type = Text.Type], 
+        MonthNumber           = [Type = Int64.Type], 
+        DayOffset             = [Type = Int64.Type], 
+        WeekOffset            = [Type = Int64.Type], 
+        MonthOffset           = [Type = Int64.Type], 
+        QuarterOffset         = [Type = Int64.Type], 
+        YearOffset            = [Type = Int64.Type], 
+        MonthName             = [Type = Text.Type], 
+        MonthNameShort        = [Type = Text.Type], 
+        MonthNameInitial      = [Type = Text.Type], 
+        DaysInMonth           = [Type = Int64.Type], 
+        MonthYearShort        = [Type = Text.Type], 
+        YearMonthNumber       = [Type = Text.Type], 
+        YearMonthShort        = [Type = Text.Type], 
+        EndOfMonth            = [Type = Date.Type], 
+        StartOfMonth          = [Type = Date.Type], 
+        EndOfWeek             = [Type = Date.Type], 
+        StartOfWeek           = [Type = Date.Type], 
+        EndOfQuarter          = [Type = Date.Type], 
+        StartOfQuarter        = [Type = Date.Type], 
+        EndOfYear             = [Type = Date.Type], 
+        StartOfYear           = [Type = Date.Type], 
+        WeekOfYearNumber      = [Type = Int64.Type], 
+        WeekOfMonthNumber     = [Type = Int64.Type], 
+        QuarterNumber         = [Type = Int64.Type], 
+        QuarterNameShort      = [Type = Text.Type], 
+        QuarterName           = [Type = Text.Type], 
+        YearQuarterName       = [Type = Text.Type], 
+        IsFutureDate          = [Type = Logical.Type], 
+        IsPastDate            = [Type = Logical.Type], 
+        RelativeDate          = [Type = Text.Type], 
+        RelativeDayBucket     = [Type = Text.Type], 
+        RelativeMonthBucket   = [Type = Text.Type], 
+        RelativeQuarterBucket = [Type = Text.Type], 
+        RelativeYearBucket    = [Type = Text.Type], 
+        DaysToEndOfMonth      = [Type = Int64.Type], 
+        DaysToEndOfQuarter    = [Type = Int64.Type], 
+        DaysToEndOfYear       = [Type = Int64.Type]
+    ], 
     // Pair the columns with their respective data types
-    TableRecordTypesSelected =
-        Table.ExpandRecordColumn(
-            Table.SelectRows(
-                Record.ToTable(myRecordTypes),
-            each List.Contains(SelectedColumns, [Name])),
-        "Value", {"Type"}, {"Value.Type"}),
-
+    TableRecordTypesSelected = Table.ExpandRecordColumn(
+        Table.SelectRows(Record.ToTable(myRecordTypes), each List.Contains(SelectedColumns, [Name])), 
+        "Value", 
+        {"Type"}, 
+        {"Value.Type"}
+    ), 
     // Create a list of lists to be applied as the 2nd argument in the Table.TransformColumnTypes function in the next step
-    ListRecordTypesSelected = Table.ToColumns(Table.Transpose(TableRecordTypesSelected)),
-
+    ListRecordTypesSelected = Table.ToColumns(Table.Transpose(TableRecordTypesSelected)), 
     // Apply the data types to all columns
-    Calendar = Table.TransformColumnTypes(ExpandedSelectedColumns, ListRecordTypesSelected),
-    ChangeType = Table.TransformColumnTypes(Calendar, {{"Date", type date}}),
-
+    Calendar = Table.TransformColumnTypes(ExpandedSelectedColumns, ListRecordTypesSelected), 
+    ChangeType = Table.TransformColumnTypes(Calendar, {{"Date", type date}}), 
     // Add one column to mark sentinel date
     AddSentinelFlag = Table.AddColumn(
-        ChangeType,
-        "SentinelFlag",
-        each if [Date] = SentinelDate then "Sentinel Date" else "Normal Date",
+        ChangeType, 
+        "SentinelFlag", 
+        each if [Date] = SentinelDate then "Sentinel Date" else "Normal Date", 
         type text
-    ),
-
+    ), 
     // If the user selected not to include a sentinel date, delete it
-    ConditionalSentinelCheck =
+    ConditionalSentinelCheck = 
         if IncludeSentinelDate = "YES" then
             AddSentinelFlag
         else
             Table.RemoveColumns(
-                Table.SelectRows(AddSentinelFlag, each [SentinelFlag] <> "Sentinel Date"),
+                Table.SelectRows(AddSentinelFlag, each [SentinelFlag] <> "Sentinel Date"), 
                 "SentinelFlag"
             )
 in
