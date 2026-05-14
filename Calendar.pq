@@ -451,13 +451,13 @@ let
     ], 
     Today = Date.From(DateTime.LocalNow()), 
     // Set the start date of the calendar
-    StartDate = #date(2015, 1, 1), 
+    StartDate = #date(2026, 1, 1), 
     // The end date
-    EndDate = #date(2017, 12, 31), 
+    EndDate = #date(2026, 12, 31), 
     // Artificial date used to fill nulls in fact table's foreign key in case of missing date values
-    SentinelDate = #date(9999, 12, 31), 
+    SentinelDate = #date(2999, 12, 31), 
     // Specify whether to include a sentinel date or not ("YES" or "NO")
-    IncludeSentinelDate = "YES", 
+    IncludeSentinelDate = "NO", 
     // Generate all dates from StartDate to EndDate
     ListOfDates = List.Generate(() => StartDate, each _ <= EndDate, each Date.AddDays(_, 1)), 
     ListWithSentinel = List.Combine({ListOfDates, {SentinelDate}}), 
