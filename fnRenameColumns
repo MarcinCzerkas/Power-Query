@@ -1,0 +1,41 @@
+// Function: fnRenameColumns
+//
+// Parameters:
+// table        = table to modify
+// exceptions   = list of words that should always be uppercase
+//
+// Output:
+// Table with column names replaced from "example_column" to "Example Column" (from database names to BI user-friendly names).
+
+(table as table, optional exceptions as nullable list) as table =>
+let
+    ExceptionList = if exceptions = null then {} else exceptions,
+
+    RenameFunction = (columnName as text) as text =>
+        let
+            ReplacedUnderscores = Text.Replace(columnName, "_", " "),
+            Words = Text.Split(ReplacedUnderscores, " "),
+
+            TransformedWords = List.Transform(
+                Words,
+                each
+                    if List.AnyTrue(
+                        List.Transform(
+                            ExceptionList,
+                            (exception) => Text.Lower(_) = Text.Lower(exception)
+                        )
+                    )
+                    then Text.Upper(_)
+                    else Text.Proper(_)
+            ),
+
+            Result = Text.Combine(TransformedWords, " ")
+        in
+            Result,
+
+    Result = Table.TransformColumnNames(
+        table,
+        RenameFunction
+    )
+in
+    Result
